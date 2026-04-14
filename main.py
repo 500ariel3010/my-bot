@@ -21,7 +21,7 @@ def keep_alive():
     t.start()
 
 # --- חלק 2: הגדרת בוט הטלגרם ---
-API_TOKEN = '8788411826:AAEQdmRx50VFB91zjRJrEaMJFghDp8Tayg0'
+API_TOKEN = '8788411826:AAEQdmRx5OVFB91zjRJrEaMJFghDp8Tayg0'
 bot = telebot.TeleBot(API_TOKEN)
 
 def attack(target):
@@ -49,7 +49,7 @@ def attack(target):
             print(f"Error with {site['n']}: {e}")
         
         # דיליי של שנייה כדי שהאתר לא יזהה הצפה מהירה מדי
-        time.sleep(0.5)
+        time.sleep(1)
 
 @bot.message_handler(func=lambda m: True)
 def handle(m):
