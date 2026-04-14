@@ -36,7 +36,7 @@ def handle(m):
     target = m.text.strip()
     if target.isdigit() and len(target) >= 10:
         bot.reply_to(m, f"🚀 מתחיל להפציץ את {target}...")
-        for _ in range(5):
+        for _ in range():
             attack(target)
             time.sleep(1)
         bot.send_message(m.chat.id, "✅ הסבב הסתיים!")
