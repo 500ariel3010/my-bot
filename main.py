@@ -1,7 +1,16 @@
 import telebot
 import requests
 import time
+from flask import Flask
+from threading import Thread
+import os
 
+app = Flask('')
+@app.route('/')
+def home(): return "Bot is Running"
+def keep_alive():
+    t = Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080))))
+    t.start()
 # הטוקן שלך
 API_TOKEN = '8788411826:AAEQdmRx5OVFB91zjRJrEaMJFghDp8Tayg0'
 bot = telebot.TeleBot(API_TOKEN)
@@ -35,4 +44,5 @@ def handle(m):
         bot.reply_to(m, "שלח מספר טלפון תקין")
 
 print("--- BOT IS READY ---")
+keep_alive()
 bot.infinity_polling()
