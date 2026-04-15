@@ -14,7 +14,7 @@ def keep_alive():
     t.start()
 
 # --- שים כאן את הטוקן שלך ---
-API_TOKEN = 'כאן_הטוקן_שלך' 
+API_TOKEN = '8788411826:AAHei0-plqCO3X-KDrhEO05PHb5NSf7bLr4' 
 bot = telebot.TeleBot(API_TOKEN)
 
 def attack(m, target, rounds):
