@@ -13,8 +13,8 @@ def keep_alive():
     t = Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080))))
     t.start()
 
-# --- שים כאן את הטוקן החדש שלך ---
-API_TOKEN = 'כאן_הטוקן_החדש_שלך' 
+# --- שים כאן את הטוקן המעודכן שלך ---
+API_TOKEN = 'כאן_הטוקן_שלך' 
 bot = telebot.TeleBot(API_TOKEN)
 
 def attack(m, target, rounds):
@@ -59,5 +59,11 @@ def handle(m):
 
 if __name__ == "__main__":
     keep_alive()
-    # התיקון כאן:
-    bot.infinity_polling(timeout=60, long_polling_timeout=5)
+    print("Bot is starting...")
+    while True:
+        try:
+            # הפעלה בסיסית בלי פרמטרים שמתנגשים
+            bot.polling(interval=0, timeout=20)
+        except Exception as e:
+            print(f"Error: {e}")
+            time.sleep(5)
