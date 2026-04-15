@@ -14,8 +14,8 @@ def keep_alive():
     t = Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080))))
     t.start()
 
-# --- הגדרת הבוט עם הטוקן החדש ---
-API_TOKEN = '8788411826:AAFfeAOSNZLU49lpJGLY6X8p780GKicwe0U'
+# --- הגדרת הבוט עם הטוקן המעודכן ---
+API_TOKEN = '8620606926:AAFYojGPF-_ex76iTJtVEbgZaVvj1Tu2ivA'
 bot = telebot.TeleBot(API_TOKEN)
 
 def attack(m, target, rounds):
@@ -57,7 +57,7 @@ def attack(m, target, rounds):
             except:
                 round_fail += 1
             
-            # --- דיליי מהיר של 0.1 שניות ---
+            # --- הדיליי המהיר (0.1 שניות) ---
             time.sleep(0.1)
         
         total_success += round_success
