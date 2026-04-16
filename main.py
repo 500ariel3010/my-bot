@@ -134,4 +134,4 @@ def handle(m):
 if __name__ == "__main__":
     keep_alive()
     bot.remove_webhook()
-    bot.polling(none_stop=True)
+    bot.polling(none_stop=True
