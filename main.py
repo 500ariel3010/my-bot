@@ -7,17 +7,16 @@ import os
 import uuid
 from datetime import datetime, timedelta
 
-# --- שרת Flask ---
+# --- שרת Flask לשמירה על הבוט בחיים ---
 app = Flask('')
 @app.route('/')
-def home(): return "<h1>Turbo Bot - Online</h1>"
+def home(): return "<h1>Turbo Bot 11 Sites - Online</h1>"
 
 def keep_alive():
     t = Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080))))
     t.start()
 
-# --- הגדרות בוט ---
-# הטוקן החדש ששלחת עכשיו
+# --- הגדרות בוט ומנהל ---
 API_TOKEN = '8620606926:AAFxqYIgZiHD9wT6I8KTNHQeI2md91URnjs'
 ADMIN_ID = 7265913946
 bot = telebot.TeleBot(API_TOKEN)
@@ -77,11 +76,11 @@ def start(m):
         "👋 בוט הספאם המהיר של צור!\n\n"
         "👑 מנכ\"ל: @Tzur_Dvir\n"
         "💳 מחירון: 100 קרדיטים ב-10₪\n\n"
-        "💰 /me - יתרה\n"
+        "💰 /me - יתרה ו-ID\n"
         "🎁 /daily - מתנה יומית\n"
         "💸 /send [ID] [כמות] - העברה\n\n"
         "🚀 הפעלה: [סבבים] [טלפון]\n"
-        "דוגמה: 3 0521234567"
+        "דוגמה: 5 0521234567"
     )
     bot.send_message(m.chat.id, welcome)
 
