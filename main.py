@@ -17,8 +17,10 @@ def keep_alive():
     t.start()
 
 # --- הגדרות בוט דיסקורד ---
-TOKEN = 'MTQ5MzEzMTA0MDM1NTUxNjUyOA.GyvMkz.ygBZLghoE_bM6-OBLq3L0RI11v6E6PmX0oB5Gg' 
+# הקוד מושך את הטוקן מה-Environment Variable שהגדרת ב-Render
+TOKEN = os.environ.get('DISCORD_TOKEN') 
 ADMIN_ID = 1281295891579408418  # ה-ID שלך
+
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
@@ -59,21 +61,17 @@ async def on_ready():
 
 @bot.command()
 async def attack(ctx, phone: str, rounds: int = 1):
-    # בדיקת אדמין
     if ctx.author.id != ADMIN_ID:
         await ctx.send("❌ You are not authorized!")
         return
 
-    # הודעת התחלה
     status_msg = await ctx.send(f"⚡ Starting Turbo Attack on {phone}...")
     
     for r in range(rounds):
         success = send_spam(phone)
-        # עדכון ההודעה הקיימת כדי לא להספים את הערוץ
         await status_msg.edit(content=f"🚀 Round {r+1}/{rounds} | Success: {success}/9")
-        
         if r < rounds - 1:
-            time.sleep(0.01) # דיליי טורבו מינימלי
+            time.sleep(0.01)
     
     await ctx.send(f"🏁 Done! Finished {rounds} rounds on {phone}.")
 
