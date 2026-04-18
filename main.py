@@ -17,7 +17,7 @@ def keep_alive():
     t.start()
 
 # --- הגדרות בוט דיסקורד ---
-TOKEN = 'MTQ5MzEzMTA0MDM1NTUxNjUyOA.G3v7ZJ.SMKVMJvN3ivXnxFYViTMzDWTj2Cyfm7NPwVprc' 
+TOKEN = 'MTQ5MzEzMTA0MDM1NTUxNjUyOA.GoMFHm.PcCYt0z002GeSd_pwjAPIylJGKBqwGIhtJyIUc' 
 ADMIN_ID = 1281295891579408418  # ה-ID שלך
 intents = discord.Intents.default()
 intents.message_content = True
