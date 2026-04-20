@@ -30,7 +30,7 @@ def keep_alive():
 
 # --- הגדרות בוט ---
 # מומלץ להגדיר BOT_TOKEN ב-Environment Variables ב-Render
-API_TOKEN = os.environ.get("BOT_TOKEN", "8765796507:AAFzWcRX_ftLB7RZoWKgbC_jbTdGHZmqcDg")
+API_TOKEN = os.environ.get("BOT_TOKEN",)
 ADMIN_ID = 7265913946
 bot = telebot.TeleBot(API_TOKEN)
 
